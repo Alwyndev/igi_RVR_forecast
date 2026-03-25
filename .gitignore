@@ -1,0 +1,30 @@
+# Virtual Environment
+igi_rvr_env/
+
+# Data (too large for git)
+Latest Data/
+Raw/
+data/interim/
+data/processed/
+
+# Model checkpoints
+models/*.pt
+models/*.pth
+models/*.pkl
+
+# Logs & Meta
+logs/
+wandb/
+.gemini/
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
