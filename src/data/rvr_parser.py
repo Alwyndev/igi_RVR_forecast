@@ -126,7 +126,7 @@ def build_rvr_dataset(data_root: str) -> pd.DataFrame:
     and returns a single unified 10-minute resampled DataFrame.
     
     Args:
-        data_root: Base path to IGI_Antigravity folder
+        data_root: Base path to IGI_RVR_Forecast folder
     """
     logger.info("Starting RVR data ingestion and parsing...")
     

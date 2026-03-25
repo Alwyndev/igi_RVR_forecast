@@ -73,7 +73,7 @@ def extract_kmz_coordinates(kmz_path: str, output_json: str):
         
 if __name__ == "__main__":
     import sys
-    root = sys.argv[1] if len(sys.argv) > 1 else r"c:\Users\alwyn\OneDrive\Desktop\IGI_Antigravity"
+    root = sys.argv[1] if len(sys.argv) > 1 else r"c:\Users\alwyn\OneDrive\Desktop\IGI_RVR_Forecast"
     kmz = os.path.join(root, "Latest Data", "MET_ANTENNA.kmz")
     out = os.path.join(root, "data", "interim", "sensor_coordinates.json")
     extract_kmz_coordinates(kmz, out)

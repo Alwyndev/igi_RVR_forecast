@@ -59,4 +59,4 @@ By switching from MinMax to **Z-Score (StandardScaler)**, the model effectively 
 | **Stability** | High | Low | **Ultra-High** |
 
 ---
-*Created with ❤️ by Antigravity AI for IGIA Flight Operations.*
+*Developed for Indira Gandhi International Airport (IGIA) Flight Operations.*

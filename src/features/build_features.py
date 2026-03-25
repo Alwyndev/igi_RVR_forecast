@@ -293,7 +293,7 @@ def process_pipeline(input_parquet: str, output_parquet: str, coords_json: str, 
 
 if __name__ == "__main__":
     import sys
-    root = sys.argv[1] if len(sys.argv) > 1 else r"c:\Users\alwyn\OneDrive\Desktop\IGI_Antigravity"
+    root = sys.argv[1] if len(sys.argv) > 1 else r"c:\Users\alwyn\OneDrive\Desktop\IGI_RVR_Forecast"
     
     in_file = os.path.join(root, "data", "processed", "igia_rvr_training_dataset.parquet")
     out_file = os.path.join(root, "data", "processed", "igia_rvr_training_dataset_final.parquet")

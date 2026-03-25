@@ -142,6 +142,6 @@ def build_final_dataset(data_root: str, output_path: str):
 
 if __name__ == "__main__":
     import sys
-    root = sys.argv[1] if len(sys.argv) > 1 else r"c:\Users\alwyn\OneDrive\Desktop\IGI_Antigravity"
+    root = sys.argv[1] if len(sys.argv) > 1 else r"c:\Users\alwyn\OneDrive\Desktop\IGI_RVR_Forecast"
     out = os.path.join(root, "data", "processed", "igia_rvr_training_dataset.parquet")
     build_final_dataset(root, out)

@@ -53,7 +53,7 @@ def optimize_dataset(input_path: str, output_path: str):
 
 if __name__ == "__main__":
     import sys
-    root = r"c:\Users\alwyn\OneDrive\Desktop\IGI_Antigravity"
+    root = r"c:\Users\alwyn\OneDrive\Desktop\IGI_RVR_Forecast"
     inp = os.path.join(root, "data", "processed", "igia_rvr_training_dataset.parquet")
     out = os.path.join(root, "data", "processed", "igia_rvr_training_dataset_optimized.parquet")
     optimize_dataset(inp, out)
