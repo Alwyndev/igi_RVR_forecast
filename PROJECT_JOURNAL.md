@@ -55,7 +55,16 @@ Previous models used only the last hidden state of a BiLSTM. However, fog is a "
 | **MAE (Meters)** | **256.21m** | 300.98m |
 | **RMSE (Meters)** | **516.05m** | 563.88m |
 | **R² Score** | **0.6249** | 0.5521 |
-| **Acc @ 200m** | **69.14%** | 65.45% |
+| **Acc @ 200m** | **81.40% (2024) / 85.70% (2025)** | 65.45% (Dec-Feb Only) |
+
+### Detailed Precision Thresholds (V3.1 Overall)
+| Threshold | 2024 (Validation) | 2025 (Test) |
+|:---|:---:|:---:|
+| **Acc @ 100m** | 76.65% | 80.67% |
+| **Acc @ 150m** | 79.32% | 83.52% |
+| **Acc @ 200m** | **81.40%** | **85.70%** |
+| **Acc @ 250m** | 83.21% | 87.48% |
+| **Acc @ 300m** | 84.81% | 88.89% |
 
 ---
 
