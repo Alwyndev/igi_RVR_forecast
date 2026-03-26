@@ -18,6 +18,7 @@
 | 2026-03-25 | Phase 7 | Real-time orchestrator (`realtime_pipeline.py`) deployed |
 | 2026-03-26 | Phase 8 | V3 Architecture: Causal LSTM + Temporal Attention logic implementation |
 | 2026-03-26 | Phase 8.1 | V3.1 Victory: Aligned with External Model (MAE 256m vs 301m) |
+| 2026-03-26 | Phase 10 | Seasonal Experiment: Oct-Mar Specialist Training (Hypothesis Rejected) |
 
 ---
 
@@ -31,20 +32,10 @@ During benchmarking, it was discovered that the external model expected the 50 t
 Previous models used only the last hidden state of a BiLSTM. However, fog is a "slow-onset, fast-clearing" process.  
 **V3.1 Insight**: By switching to a **Temporal Attention Layer** (`TemporalAttention` class), the model can "look back" through its 36-step memory and pick out the exact 10-minute window where Dew Point Depression reached zero, regardless of how many hours ago it happened.
 
-### 3. Architecture Specifics (V3.1)
-- **Input Dimensions**: 104 fused features.
-- **Lookback window**: 36 steps (6 hours).
-- **Hidden Layers**: 3-layer Unidirectional Residual LSTM (384 units per layer).
-- **Dropout**: 0.3 (Standard) / 0.15 (Final head).
-- **Projection Head**: Linear(384, 512) -> ReLU -> Linear(512, 256) -> ReLU -> Linear(256, 50).
-- **Parameters**: 3,573,811 (Optimized for GPU compute).
-
 ### 4. Training Hyperparameters
 - **Loss**: L1Loss (Direct MAE optimization).
 - **Optimizer**: Adam (Weight Decay: 1e-5).
-- **Scheduler**: ReduceLROnPlateau (Factor: 0.5, Patience: 10).
 - **Batch Size**: 128 (Improved generalization over 512).
-- **Hardware**: Accelerated via FP16 Mixed Precision on RTX 5070 Ti.
 
 ---
 
@@ -65,6 +56,23 @@ Previous models used only the last hidden state of a BiLSTM. However, fog is a "
 | **Acc @ 200m** | **81.40%** | **85.70%** |
 | **Acc @ 250m** | 83.21% | 87.48% |
 | **Acc @ 300m** | 84.81% | 88.89% |
+
+---
+
+## Phase 10: Seasonal Training Experiment (Oct-Mar)
+
+### Hypothesis
+Restricting training to Oct-Mar (Fog Season) will improve precision by eliminating summer noise.
+
+### Results (Dec-Feb Fair Window)
+| Metric | Champion (Full-Year) | Seasonal (Oct-Mar) | Status |
+|:---|:---:|:---:|:---|
+| **MAE** | **288.25m** | 308.28m | ❌ **Worse** |
+| **RMSE** | **545.37m** | 550.80m | ❌ **Worse** |
+| **R² Score** | **0.6411** | 0.6327 | ❌ **Worse** |
+
+### Conclusion
+**The hypothesis was rejected.** Seasonal filtering reduced the model's ability to generalize, as it lost the opportunity to learn "baseline" atmospheric dynamics from clear-sky periods. The Full-Year V3.1 model remains the official champion.
 
 ---
 
