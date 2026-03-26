@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
-from src.models.model_multi import RVRBiLSTM_Multi
+from src.models.model_v3 import RVRAttentionLSTM_V3
 from src.data.runway_config import CONSOLIDATED_ZONES
 
 # Precise coordinates from sensor_coordinates.json
@@ -51,29 +51,37 @@ def get_status_color(rvr_m):
 class MultiHorizonEngine:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model_path = ROOT / "models" / "best_bilstm_multi.pt"
-        scaler_dir = ROOT / "data" / "processed" / "scalers_multi"
+        model_path = ROOT / "models" / "best_lstm_v3.pt"
+        scaler_dir = ROOT / "data" / "processed" / "scalers_v3"
         
         self.scaler_X = joblib.load(scaler_dir / "scaler_X.pkl")
         self.scaler_y = joblib.load(scaler_dir / "scaler_y.pkl")
         
         ckpt = torch.load(model_path, map_location=self.device)
-        self.config = ckpt['config']
-        
-        self.model = RVRBiLSTM_Multi(
+        self.model = RVRAttentionLSTM_V3(
             input_size=104, 
-            hidden_size=self.config['hidden_size'],
-            num_layers=self.config['num_layers'],
-            output_size=self.config['output_size'],
-            dropout=0.0
+            hidden_size=384,
+            num_layers=3,
+            output_size=50,
+            dropout=0.3
         ).to(self.device)
         
-        self.model.load_state_dict(ckpt["model_state"])
+        state_dict = ckpt["model_state"] if "model_state" in ckpt else ckpt
+        self.model.load_state_dict(state_dict)
         self.model.eval()
+
+        # Define canonical target ordering to match neurons 1:1
+        # V3 standard: alphabetical by target column name
+        self.target_names = sorted([
+            f"target_{z}_rvr_actual_mean_{h}" 
+            for z in CONSOLIDATED_ZONES for h in HORIZONS
+        ])
 
     def predict_multi(self, input_features_df):
         """Returns predictions shape (10_zones, 5_horizons) -> metres"""
-        X_scaled = self.scaler_X.transform(input_features_df.tail(36))
+        # Ensure we only use numeric features and in correct order from scaler
+        feature_cols = self.scaler_X.feature_names_in_
+        X_scaled = self.scaler_X.transform(input_features_df[feature_cols].tail(36))
         X_tensor = torch.tensor(X_scaled, dtype=torch.float32).unsqueeze(0).to(self.device)
         
         with torch.no_grad():
@@ -82,17 +90,24 @@ class MultiHorizonEngine:
         preds_m = self.scaler_y.inverse_transform(preds_scaled)[0]
         preds_m = np.clip(preds_m, 0, 10000)
         
-        # Reshape to (10, 5) corresponding to CONSOLIDATED_ZONES and HORIZONS
-        return preds_m.reshape(10, 5)
+        # Create a lookup for alphabetical neuron mapping
+        results = np.zeros((10, 5))
+        neuron_lookup = {name: val for name, val in zip(self.target_names, preds_m)}
+        
+        for z_idx, zone in enumerate(CONSOLIDATED_ZONES):
+            for h_idx, horizon in enumerate(HORIZONS):
+                key = f"target_{zone}_rvr_actual_mean_{horizon}"
+                results[z_idx, h_idx] = neuron_lookup[key]
+                
+        return results
 
 def create_multi_dashboard():
     print("Initializing Multi-Horizon Engine...")
     engine = MultiHorizonEngine()
     
     # 1. Provide recent data from test set
-    df = pd.read_parquet(ROOT / "data" / "processed" / "igia_rvr_training_dataset_final.parquet")
-    feature_cols = [c for c in df.columns if "target_" not in c and c not in df.select_dtypes(exclude=[np.number]).columns]
-    sample_input = df[feature_cols].tail(36)
+    df = pd.read_parquet(ROOT / "data" / "processed" / "igia_rvr_training_dataset_multi.parquet")
+    sample_input = df.tail(100) # Give it some buffer
     
     # preds matrix: shape (10 zones, 5 horizons)
     preds = engine.predict_multi(sample_input)
