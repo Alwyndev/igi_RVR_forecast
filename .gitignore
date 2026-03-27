@@ -28,3 +28,6 @@ __pycache__/
 .vscode/
 .idea/
 *.swp
+
+external_models/*.zip
+external_models/best_model_v2_unzipped/
