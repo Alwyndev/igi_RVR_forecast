@@ -69,7 +69,7 @@ CONFIG = {
     "lr_max":          1e-3,
     "weight_decay":    1e-5,
     "patience":        15,
-    "fog_weight":      8.0, # Aggressive penalty for missed fog
+    "fog_weight":      4.5, # Reduced penalty to balance MAE and Recall
 }
 
 # (Dataset/Dataloader code similar to train_v3)

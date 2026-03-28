@@ -41,6 +41,12 @@ ZONE_COORDS = {
 HORIZONS = ["10m", "30m", "1h", "3h", "6h"]
 HORIZON_MINUTES = [10, 30, 60, 180, 360]
 
+# Dynamic-hybrid parameters (selected on 2024 validation)
+HYBRID_W_V5_CLEAR = 0.25
+HYBRID_W_V5_FOG = 0.60
+HYBRID_FOG_LO = 600.0
+HYBRID_FOG_HI = 1300.0
+
 def get_status_color(rvr_m):
     """ICAO Fog Category hex colors"""
     if rvr_m >= 1500: return "#006400" # darkgreen
@@ -51,24 +57,38 @@ def get_status_color(rvr_m):
 class MultiHorizonEngine:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model_path = ROOT / "models" / "best_lstm_v3.pt"
+        model_v3_path = ROOT / "models" / "best_lstm_v3.pt"
+        model_v5_path = ROOT / "models" / "best_lstm_v5.pt"
         scaler_dir = ROOT / "data" / "processed" / "scalers_v3"
         
         self.scaler_X = joblib.load(scaler_dir / "scaler_X.pkl")
         self.scaler_y = joblib.load(scaler_dir / "scaler_y.pkl")
         
-        ckpt = torch.load(model_path, map_location=self.device)
-        self.model = RVRAttentionLSTM_V3(
+        self.model_v3 = RVRAttentionLSTM_V3(
             input_size=104, 
             hidden_size=384,
             num_layers=3,
             output_size=50,
             dropout=0.3
         ).to(self.device)
-        
-        state_dict = ckpt["model_state"] if "model_state" in ckpt else ckpt
-        self.model.load_state_dict(state_dict)
-        self.model.eval()
+
+        self.model_v5 = RVRAttentionLSTM_V3(
+            input_size=104,
+            hidden_size=384,
+            num_layers=3,
+            output_size=50,
+            dropout=0.3
+        ).to(self.device)
+
+        ckpt_v3 = torch.load(model_v3_path, map_location=self.device)
+        state_dict_v3 = ckpt_v3["model_state"] if "model_state" in ckpt_v3 else ckpt_v3
+        self.model_v3.load_state_dict(state_dict_v3)
+        self.model_v3.eval()
+
+        ckpt_v5 = torch.load(model_v5_path, map_location=self.device)
+        state_dict_v5 = ckpt_v5["model_state"] if "model_state" in ckpt_v5 else ckpt_v5
+        self.model_v5.load_state_dict(state_dict_v5)
+        self.model_v5.eval()
 
         # Define canonical target ordering to match neurons 1:1
         # V3 standard: alphabetical by target column name
@@ -76,6 +96,14 @@ class MultiHorizonEngine:
             f"target_{z}_rvr_actual_mean_{h}" 
             for z in CONSOLIDATED_ZONES for h in HORIZONS
         ])
+
+    @staticmethod
+    def _dynamic_blend_m(v3_m, v5_m):
+        min_pred = np.minimum(v3_m, v5_m)
+        risk = np.clip((HYBRID_FOG_HI - min_pred) / (HYBRID_FOG_HI - HYBRID_FOG_LO), 0.0, 1.0)
+        w_v5 = HYBRID_W_V5_CLEAR + (HYBRID_W_V5_FOG - HYBRID_W_V5_CLEAR) * risk
+        w_v3 = 1.0 - w_v5
+        return (w_v3 * v3_m) + (w_v5 * v5_m)
 
     def predict_multi(self, input_features_df):
         """Returns predictions shape (10_zones, 5_horizons) -> metres"""
@@ -85,10 +113,12 @@ class MultiHorizonEngine:
         X_tensor = torch.tensor(X_scaled, dtype=torch.float32).unsqueeze(0).to(self.device)
         
         with torch.no_grad():
-            preds_scaled = self.model(X_tensor).cpu().numpy()
-            
-        preds_m = self.scaler_y.inverse_transform(preds_scaled)[0]
-        preds_m = np.clip(preds_m, 0, 10000)
+            preds_v3_scaled = self.model_v3(X_tensor).cpu().numpy()
+            preds_v5_scaled = self.model_v5(X_tensor).cpu().numpy()
+
+        preds_v3_m = np.clip(self.scaler_y.inverse_transform(preds_v3_scaled), 0, 10000)[0]
+        preds_v5_m = np.clip(self.scaler_y.inverse_transform(preds_v5_scaled), 0, 10000)[0]
+        preds_m = np.clip(self._dynamic_blend_m(preds_v3_m, preds_v5_m), 0, 10000)
         
         # Create a lookup for alphabetical neuron mapping
         results = np.zeros((10, 5))
