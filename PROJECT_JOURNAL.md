@@ -139,6 +139,33 @@ To increase fog capture, we executed a second full run with stronger fog-prior w
 - The aggressive pass did not beat the recall-tuned pass; it reduced recall slightly and worsened MAE.
 - XGBoost remains a useful tabular benchmark, but sequence-aware LSTM variants still dominate safety-relevant fog sensitivity in this project.
 
+## Dynamic Hybrid + XGBoost Fusion Experiment (April 17, 2026)
+
+To test whether tree-based predictions can improve the existing V3.1+V5 dynamic hybrid, we ran a dedicated fusion benchmark:
+
+- **Script**: `src/models/benchmark_dynamic_hybrid_xgboost.py`
+- **Compared Models**: V3.1, V5, Dynamic Hybrid (V3+V5), XGBoost (recall-tuned), Dynamic Hybrid + XGBoost (risk-aware), Ridge Stacking (Dyn,V3,V5,XGB)
+- **Split**: Validation=2024 (tuning), Test=2025 (final reporting)
+
+### Validation-selected Parameters
+- Dynamic V3/V5: `w_v5_clear=0.25`, `w_v5_fog=0.60`, `fog_lo=600m`, `fog_hi=1300m`
+- Dynamic (Hybrid+XGB): `w_xgb_clear=0.10`, `w_xgb_fog=0.05`, `fog_lo=600m`, `fog_hi=900m`
+
+### Test Metrics (2025)
+| Model / Strategy | MAE | RMSE | R2 | Acc@100m | Acc@200m | Fog Precision | Fog Recall | Fog F1 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **V3.1** | 127.51m | 370.65m | 0.4800 | 80.73% | 85.75% | **83.38%** | 27.09% | 0.4089 |
+| **V5 (4.5x)** | 141.61m | 381.94m | 0.3921 | 77.12% | 83.70% | 70.05% | **32.85%** | **0.4473** |
+| **Dynamic Hybrid (V3+V5)** | **127.23m** | 365.65m | 0.4887 | **79.98%** | **85.55%** | 78.98% | 29.82% | 0.4330 |
+| **XGBoost (recall-tuned)** | 178.45m | 408.54m | 0.2831 | 66.80% | 77.36% | 87.47% | 4.66% | 0.0885 |
+| **Dynamic Hybrid + XGBoost** | 129.38m | **359.94m** | **0.5051** | 78.83% | 85.45% | 80.00% | 26.40% | 0.3970 |
+| **Ridge Stack (Dyn,V3,V5,XGB)** | 151.97m | 375.20m | 0.4543 | 71.97% | 81.54% | 90.71% | 4.58% | 0.0872 |
+
+### Outcome
+- Dynamic Hybrid + XGBoost improved precision slightly (**+1.02 pts**) but reduced recall (**-3.42 pts**) and worsened MAE (**+2.15m**) versus Dynamic Hybrid.
+- Ridge stacking collapsed to a high-precision / near-zero-recall regime and is not operationally suitable for fog-capture goals.
+- **Decision**: keep **Dynamic Hybrid (V3+V5)** as the deployment-favored compromise for now.
+
 ---
 
 ## Final Project Status
@@ -146,5 +173,6 @@ To increase fog capture, we executed a second full run with stronger fog-prior w
 - **Champion Identified**: V3.1 Residual Attention LSTM.
 - **Precision Threshold**: 80.7% Accuracy within 100 meters.
 - **Risk Profile**: High precision (83%), low recall (27%) at 600m threshold.
+- **Latest Ensemble Finding**: Adding XGBoost to Dynamic Hybrid did not improve the primary safety trade-off (recall/F1).
 
 *End of Project Journal*

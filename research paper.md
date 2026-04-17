@@ -210,6 +210,30 @@ Baseline vs tuned fog weighting results:
 
 Even with tuning, absolute fog recall remains far below sequence-model variants, indicating that temporal context learning is central for rare fog-onset capture.
 
+### 6.8 Fusion Experiment: Dynamic Hybrid + XGBoost
+
+To test whether tree-based predictions can improve the established dynamic hybrid (V3+V5), we evaluated two additional ensemble strategies on the same 2025 test split:
+
+1. Dynamic Hybrid + XGBoost (risk-aware blending with validation-tuned weights).
+2. Ridge stacking over four predictors (Dynamic Hybrid, V3.1, V5, XGBoost).
+
+Validation-selected parameters were:
+
+1. Dynamic V3/V5: w_v5_clear = 0.25, w_v5_fog = 0.60, fog_lo = 600 m, fog_hi = 1300 m.
+2. Dynamic (Hybrid+XGB): w_xgb_clear = 0.10, w_xgb_fog = 0.05, fog_lo = 600 m, fog_hi = 900 m.
+
+| Strategy | MAE (m) | RMSE (m) | R2 | Acc@100m | Acc@200m | Fog Precision | Fog Recall | Fog F1 |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Dynamic Hybrid (V3+V5) | 127.23 | 365.65 | 0.4887 | 79.98% | 85.55% | 78.98% | 29.82% | 0.4330 |
+| Dynamic Hybrid + XGBoost | 129.38 | 359.94 | 0.5051 | 78.83% | 85.45% | 80.00% | 26.40% | 0.3970 |
+| Ridge Stacking (Dyn,V3,V5,XGB) | 151.97 | 375.20 | 0.4543 | 71.97% | 81.54% | 90.71% | 4.58% | 0.0872 |
+
+Interpretation:
+
+1. Adding XGBoost to Dynamic Hybrid improved precision slightly (+1.02 points) but degraded recall (-3.42 points), Fog F1 (-0.0360), and MAE (+2.15 m).
+2. Ridge stacking collapsed to a highly conservative regime with near-zero fog sensitivity.
+3. Under current feature/model constraints, Dynamic Hybrid (V3+V5) remains the best practical precision-recall compromise.
+
 ## 7. Discussion
 
 ### 7.1 Why V3.1 Works
@@ -262,7 +286,7 @@ Planned extensions:
 
 ## 11. Conclusion
 
-This study demonstrates that high-fidelity multi-horizon RVR forecasting at IGIA benefits from a sequence-first design with strict causality, temporal attention, and feature-rich data fusion. The V3.1 Residual Attention LSTM establishes strong accuracy and precision performance, while V5 and hybrid blending improve safety sensitivity where fog-miss cost is high. The resulting framework is both technically competitive and operationally actionable, providing a robust foundation for next-generation airport visibility intelligence.
+This study demonstrates that high-fidelity multi-horizon RVR forecasting at IGIA benefits from a sequence-first design with strict causality, temporal attention, and feature-rich data fusion. The V3.1 Residual Attention LSTM establishes strong accuracy and precision performance, while V5 and hybrid blending improve safety sensitivity where fog-miss cost is high. Additional fusion with XGBoost improves some regression/correlation metrics but degrades the primary fog-capture trade-off (recall/F1), reinforcing Dynamic Hybrid (V3+V5) as the strongest operational compromise in this project stage. The resulting framework remains technically competitive and operationally actionable, and it defines clear next steps for constrained-recall ensemble optimization.
 
 ## References (Draft)
 

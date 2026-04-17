@@ -154,6 +154,34 @@ A second run was executed explicitly to increase fog-event sensitivity, with hea
 - The **aggressive** run (`fog_weight=20`) did not outperform the recall-tuned run (`fog_weight=12`) and introduced MAE regression.
 - Despite improvement versus baseline, absolute test fog recall remains low (best: 4.66%), so tree-only models still under-capture rare fog onset compared to the tuned LSTM family.
 
+### 3.9 Dynamic Hybrid + XGBoost Fusion Benchmark (April 17 2026)
+To test whether XGBoost can improve the current sequence-model compromise strategy, we executed a dedicated fusion benchmark combining the V3.1+V5 dynamic hybrid with the recall-tuned XGBoost model.
+
+#### Setup
+- **Benchmark Script**: `src/models/benchmark_dynamic_hybrid_xgboost.py`
+- **Inputs**: V3.1 predictions, V5 predictions, Dynamic Hybrid predictions, XGBoost predictions
+- **Tuning Protocol**: 2024 validation for parameter selection; 2025 test for final reporting
+- **Fog Threshold**: 600m
+
+#### Validation-Selected Parameters
+- Dynamic V3/V5: `w_v5_clear=0.25`, `w_v5_fog=0.60`, `fog_lo=600`, `fog_hi=1300`
+- Dynamic (Hybrid+XGB): `w_xgb_clear=0.10`, `w_xgb_fog=0.05`, `fog_lo=600`, `fog_hi=900`
+
+#### Test Results (2025)
+| Model / Strategy | MAE | RMSE | R2 | Acc@100m | Acc@200m | Fog Precision | Fog Recall | Fog F1 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **V3.1** | 127.51m | 370.65m | 0.4800 | 80.73% | 85.75% | **83.38%** | 27.09% | 0.4089 |
+| **V5 (4.5x)** | 141.61m | 381.94m | 0.3921 | 77.12% | 83.70% | 70.05% | **32.85%** | **0.4473** |
+| **Dynamic Hybrid (V3+V5)** | **127.23m** | 365.65m | 0.4887 | **79.98%** | **85.55%** | 78.98% | 29.82% | 0.4330 |
+| **XGBoost (recall-tuned)** | 178.45m | 408.54m | 0.2831 | 66.80% | 77.36% | 87.47% | 4.66% | 0.0885 |
+| **Dynamic Hybrid + XGBoost** | 129.38m | **359.94m** | **0.5051** | 78.83% | 85.45% | 80.00% | 26.40% | 0.3970 |
+| **Ridge Stacking (Dyn,V3,V5,XGB)** | 151.97m | 375.20m | 0.4543 | 71.97% | 81.54% | 90.71% | 4.58% | 0.0872 |
+
+#### Interpretation
+- Dynamic Hybrid + XGBoost increased precision slightly (+1.02 pts vs Dynamic Hybrid) but reduced recall (-3.42 pts), reduced Fog F1 (-0.0360), and worsened MAE (+2.15m).
+- Ridge stacking converged to an overly conservative regime (very high precision, very low recall), making it unsuitable for fog-capture objectives.
+- **Operational decision**: retain **Dynamic Hybrid (V3+V5)** as the preferred production compromise under current model family and tuning constraints.
+
 ---
 
 ## 4. Key Discovery: The Alpha-Ordering Standard
@@ -173,4 +201,4 @@ python src.models.train_v3.py --no-wandb
 The champion model is integrated into `realtime_pipeline.py`. It polls the `Latest Data/` folder every 10 minutes and generates the interactive `igia_rvr_dashboard_multi.html`.
 
 ---
-*Document Version: 4.6 (Added Third Aggressive XGBoost Recall Pass)*
+*Document Version: 4.7 (Added Dynamic Hybrid + XGBoost Fusion Benchmark)*
