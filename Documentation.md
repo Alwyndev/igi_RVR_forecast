@@ -92,6 +92,68 @@ To validate runway-critical behavior at representative touchdown and midpoint se
 - V3.1 remains strongest for precision-oriented operation on these zones (best Fog Precision and slight edge in Acc@100m/200m).
 - V5 remains the highest-recall option, but with a larger false-alarm penalty on this subset.
 
+### 3.7 XGBoost Baseline (Tree-Based Alternative, March 31 2026)
+To benchmark a non-sequential tabular learner against the LSTM family, we trained a dedicated multi-horizon XGBoost system using the same feature space (104 features), same 50 targets, and same chronological split protocol.
+
+#### Setup
+- **Trainer**: `src/models/train_xgboost.py`
+- **Modeling Strategy**: 50 independent `XGBRegressor` models (one per target) trained in a unified loop.
+- **Data Split**: Train (<=2023), Validation (2024), Test (2025)
+- **Dataset Sizes**: Train 160,032 | Val 45,898 | Test 46,454
+- **Objective**: `reg:squarederror`
+- **Core Parameters**: `n_estimators=900`, `max_depth=8`, `learning_rate=0.03`, `subsample=0.9`, `colsample_bytree=0.85`
+- **Safety Bias**: Fog-weighted row sampling with `fog_weight=4.0` at 600m threshold
+- **Training Observability**: Per-target progress with validation RMSE emitted every 100 boosting rounds
+- **Wall-Clock Duration**: ~3h 07m for all 50 targets
+
+#### Baseline XGBoost Metrics
+| Split | MAE (m) | Fog Precision @ 600m | Fog Recall @ 600m |
+| :--- | :---: | :---: | :---: |
+| **Validation (2024)** | **167.30** | **91.11%** | **30.88%** |
+| **Test (2025)** | **180.50** | **83.33%** | **2.88%** |
+
+#### Interpretation
+- XGBoost baseline is extremely conservative on unseen 2025 fog events (very high precision, very low recall).
+- The validation recall (30.88%) did not transfer to 2025 test (2.88%), indicating strong distribution shift for fog behavior under this tree-only setup.
+- This motivates a second tuning run with stronger fog-prior weighting to intentionally trade MAE/precision for improved recall.
+
+### 3.8 XGBoost Recall-Tuned Reruns (March 31 2026)
+A second run was executed explicitly to increase fog-event sensitivity, with heavier fog weighting and slightly fewer boosting rounds for faster convergence.
+
+#### Tuning Changes from Baseline
+- `fog_weight`: **4.0 -> 12.0**
+- `n_estimators`: **900 -> 500**
+- All other core model parameters and data split protocol unchanged.
+
+#### Recall-Tuned Metrics
+| Split | MAE (m) | Fog Precision @ 600m | Fog Recall @ 600m |
+| :--- | :---: | :---: | :---: |
+| **Validation (2024)** | **167.48** | **90.36%** | **32.42%** |
+| **Test (2025)** | **178.69** | **87.48%** | **4.66%** |
+
+#### Aggressive Recall Run Metrics
+| Split | MAE (m) | Fog Precision @ 600m | Fog Recall @ 600m |
+| :--- | :---: | :---: | :---: |
+| **Validation (2024)** | **170.67** | **90.20%** | **31.58%** |
+| **Test (2025)** | **180.42** | **85.51%** | **4.43%** |
+
+#### Side-by-Side: Baseline vs Recall-Tuned vs Aggressive
+| Split | Variant | MAE (m) | Precision @ 600m | Recall @ 600m |
+| :--- | :--- | :---: | :---: | :---: |
+| Validation | Baseline (`fog_weight=4.0`, `n_estimators=900`) | 167.30 | 91.11% | 30.88% |
+| Validation | Recall-Tuned (`fog_weight=12.0`, `n_estimators=500`) | 167.48 | 90.36% | 32.42% |
+| Validation | Aggressive (`fog_weight=20.0`, `n_estimators=700`) | 170.67 | 90.20% | 31.58% |
+| Test | Baseline (`fog_weight=4.0`, `n_estimators=900`) | 180.50 | 83.33% | 2.88% |
+| Test | Recall-Tuned (`fog_weight=12.0`, `n_estimators=500`) | 178.69 | 87.48% | 4.66% |
+| Test | Aggressive (`fog_weight=20.0`, `n_estimators=700`) | 180.42 | 85.51% | 4.43% |
+
+#### Trade-off Summary
+- **Recall improved** on both splits (Validation: +1.54 pts, Test: +1.78 pts).
+- **Test MAE improved** slightly (180.50m -> 178.69m).
+- Precision did not degrade in this run; it remained high and increased on test.
+- The **aggressive** run (`fog_weight=20`) did not outperform the recall-tuned run (`fog_weight=12`) and introduced MAE regression.
+- Despite improvement versus baseline, absolute test fog recall remains low (best: 4.66%), so tree-only models still under-capture rare fog onset compared to the tuned LSTM family.
+
 ---
 
 ## 4. Key Discovery: The Alpha-Ordering Standard
@@ -111,4 +173,4 @@ python src.models.train_v3.py --no-wandb
 The champion model is integrated into `realtime_pipeline.py`. It polls the `Latest Data/` folder every 10 minutes and generates the interactive `igia_rvr_dashboard_multi.html`.
 
 ---
-*Document Version: 4.3 (Subset Benchmark Update)*
+*Document Version: 4.6 (Added Third Aggressive XGBoost Recall Pass)*

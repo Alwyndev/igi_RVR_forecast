@@ -76,6 +76,71 @@ To stress-test operationally important runway points, we evaluated only:
 
 ---
 
+## XGBoost Baseline Run (March 31, 2026)
+
+To test whether a pure tabular gradient-boosting family can complement or replace sequence models, we trained a full 50-target XGBoost benchmark.
+
+### Training Configuration
+- **Script**: `src/models/train_xgboost.py`
+- **Approach**: One XGBoost regressor per target (50 total)
+- **Features / Targets**: 104 / 50
+- **Split**: Train <=2023, Val=2024, Test=2025
+- **Rows**: Train 160,032 | Val 45,898 | Test 46,454
+- **Params**: `n_estimators=900`, `max_depth=8`, `learning_rate=0.03`, `subsample=0.9`, `colsample_bytree=0.85`
+- **Fog Weighting**: `fog_weight=4.0` (rows with any target <600m)
+- **Runtime**: ~3h 07m
+
+### Exact Metrics (Baseline XGBoost)
+| Split | MAE | Fog Precision | Fog Recall |
+| :--- | :---: | :---: | :---: |
+| **Validation (2024)** | 167.30m | 91.11% | 30.88% |
+| **Test (2025)** | 180.50m | 83.33% | 2.88% |
+
+### Diagnostic Notes
+- Validation looked promising on recall, but generalization on 2025 fog events collapsed (2.88% recall).
+- Failure mode is over-conservative prediction under test-shift: strong precision, near-zero sensitivity.
+- Next action: run a recall-biased tuning pass (higher fog weighting) and compare side-by-side.
+
+## XGBoost Recall-Tuned Runs (March 31, 2026)
+
+To increase fog capture, we executed a second full run with stronger fog-prior weighting.
+
+### Tuning Deltas
+- `fog_weight`: 4.0 -> 12.0
+- `n_estimators`: 900 -> 500
+- Data split, features, and core tree hyperparameters unchanged.
+
+### Exact Metrics (Recall-Tuned)
+| Split | MAE | Fog Precision | Fog Recall |
+| :--- | :---: | :---: | :---: |
+| **Validation (2024)** | 167.48m | 90.36% | 32.42% |
+| **Test (2025)** | 178.69m | 87.48% | 4.66% |
+
+### Exact Metrics (Aggressive Recall)
+| Split | MAE | Fog Precision | Fog Recall |
+| :--- | :---: | :---: | :---: |
+| **Validation (2024)** | 170.67m | 90.20% | 31.58% |
+| **Test (2025)** | 180.42m | 85.51% | 4.43% |
+
+### Side-by-Side (Baseline vs Recall-Tuned vs Aggressive)
+| Split | Variant | MAE | Fog Precision | Fog Recall |
+| :--- | :--- | :---: | :---: | :---: |
+| Validation | Baseline (4.0, 900 trees) | 167.30m | 91.11% | 30.88% |
+| Validation | Recall-Tuned (12.0, 500 trees) | 167.48m | 90.36% | 32.42% |
+| Validation | Aggressive (20.0, 700 trees) | 170.67m | 90.20% | 31.58% |
+| Test | Baseline (4.0, 900 trees) | 180.50m | 83.33% | 2.88% |
+| Test | Recall-Tuned (12.0, 500 trees) | 178.69m | 87.48% | 4.66% |
+| Test | Aggressive (20.0, 700 trees) | 180.42m | 85.51% | 4.43% |
+
+### Takeaways
+- Recall improved on both validation and test, which was the tuning objective.
+- Absolute test recall is still very low for operations where missed fog events are costly.
+- In this configuration, MAE also improved slightly on test; this run did not force the expected MAE penalty.
+- The aggressive pass did not beat the recall-tuned pass; it reduced recall slightly and worsened MAE.
+- XGBoost remains a useful tabular benchmark, but sequence-aware LSTM variants still dominate safety-relevant fog sensitivity in this project.
+
+---
+
 ## Final Project Status
 - **Baseline Accomplished**: 301m MAE reduced to 127m.
 - **Champion Identified**: V3.1 Residual Attention LSTM.
