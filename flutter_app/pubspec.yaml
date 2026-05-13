@@ -15,3 +15,11 @@ dependencies:
 
 flutter:
   uses-material-design: true
+dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/RVR_logo.png"
+

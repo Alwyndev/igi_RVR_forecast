@@ -1,0 +1,13 @@
+.git/
+.vscode/
+igi_rvr_env/
+Raw/
+Latest Data/
+flutter_app/
+experiments/
+external_models/
+__pycache__/
+logs/
+wandb/
+models/best_xgboost_multi*.joblib
+data/interim/
