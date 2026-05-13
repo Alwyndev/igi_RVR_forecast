@@ -1,41 +1,54 @@
 """
-app.py -- Flask API for IGIA RVR Forecasting
+app.py -- Flask API for IGIA RVR Forecasting (V3/V5 Dynamic Hybrid)
 
-Endpoint: /forecast (POST)
-Payload: JSON containing 6 hours of feature data.
+Endpoints:
+  GET  /health             – Readiness probe
+  POST /forecast            – Single-window multi-horizon RVR prediction
+  GET  /predictions_multi   – Latest grouped predictions for all zones
+  GET  /map                 – Folium HTML dashboard
 """
 
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-from src.models.inference import RVRInferenceEngine
 import pandas as pd
 import os
 
-# Import MultiHorizonEngine to compute multi-horizon predictions
 from dashboard_multi import MultiHorizonEngine, ZONE_COORDS, HORIZONS, create_multi_dashboard
 
 app = Flask(__name__)
 CORS(app)
-engine = RVRInferenceEngine()
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({"status": "ready", "model": "BiLSTM-V1.1-Residual"})
+    return jsonify({"status": "ready", "model": "V3.1+V5 Dynamic Hybrid"})
 
 @app.route('/forecast', methods=['POST'])
 def forecast():
+    """Single-window forecast using V3/V5 Dynamic Hybrid.
+
+    Expects JSON: {"features": [<36 rows of 104-feature dicts>]}
+    Returns per-zone, per-horizon predictions in metres.
+    """
     try:
         data = request.json
-        # Convert incoming JSON to DataFrame
         df = pd.DataFrame(data['features'])
-        
+
         if len(df) != 36:
             return jsonify({"error": "Exactly 36 timesteps (6 hours at 10-min) required"}), 400
-            
-        predictions = engine.predict(df)
+
+        engine = MultiHorizonEngine()
+        preds = engine.predict_multi(df)
+
+        zone_keys = sorted(list(ZONE_COORDS.keys()))
+        zones = []
+        for z_idx, zone in enumerate(zone_keys):
+            lat, lon = ZONE_COORDS[zone]
+            zone_preds = {h: float(preds[z_idx, h_idx]) for h_idx, h in enumerate(HORIZONS)}
+            zones.append({"id": zone, "lat": lat, "lon": lon, "predictions": zone_preds})
+
         return jsonify({
-            "forecast_horizon": "6 hours",
-            "predictions": predictions,
+            "forecast_horizons": HORIZONS,
+            "zones": zones,
             "units": "metres"
         })
     except Exception as e:

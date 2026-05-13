@@ -6,8 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 
-// NOTE: Using host machine's local IP address (192.168.1.42) for physical device testing
-// (Or 127.0.0.1 since we setup `adb reverse tcp:5000 tcp:5000`)
+// Production Cloud Run endpoint
 const String backendUrl =
     'https://igi-rvr-api-969804968558.asia-south1.run.app/predictions_multi';
 
@@ -22,11 +21,11 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  showdebugmodeBanner() => false;
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'IGI RVR Map',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
       home: const MapPage(),
     );

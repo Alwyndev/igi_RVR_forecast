@@ -20,7 +20,6 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from src.models.inference import RVRInferenceEngine # To be updated for Multi if needed, or use dashboard_multi logic
 from dashboard_multi import create_multi_dashboard
 
 logging.basicConfig(
