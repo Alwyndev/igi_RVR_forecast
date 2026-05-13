@@ -1,0 +1,17 @@
+name: igi_rvr_flutter
+description: Minimal Flutter app to display IGI RVR map with slider using backend predictions
+publish_to: 'none'
+version: 0.0.1
+environment:
+  sdk: '>=2.17.0 <3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_map: ^4.0.0
+  latlong2: ^0.8.1
+  http: ^0.13.5
+  flutter_map_marker_cluster: ^1.1.1
+
+flutter:
+  uses-material-design: true
