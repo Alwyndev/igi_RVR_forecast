@@ -16,11 +16,10 @@ This document covers the full deployment pipeline: from containerized backend to
 │   • ICAO markers     │                      │   ├── /predictions_multi     │
 └─────────────────────┘                      │   └── /map                   │
                                               │                              │
-                                              │   V3.1 + V5 Dynamic Hybrid   │
-                                              │   MultiHorizonEngine         │
-                                              │   ├── best_lstm_v3.pt        │
-                                              │   ├── best_lstm_v5.pt        │
-                                              │   └── scalers_v3/            │
+                                              │   Background Task (10m)      │
+                                              │   ├── Playwright Scraper     │
+                                              │   ├── Preprocessor (104 F)   │
+                                              │   └── MultiHorizonEngine     │
                                               └──────────────────────────────┘
 ```
 
@@ -167,12 +166,16 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Playwright browser and its OS dependencies
+RUN playwright install --with-deps chromium
+
 COPY . .
 EXPOSE 5000
 CMD gunicorn app:app --bind 0.0.0.0:$PORT
 ```
 
-Cloud Run sets the `$PORT` environment variable automatically. Gunicorn binds to it.
+Cloud Run sets the `$PORT` environment variable automatically. Gunicorn binds to it. Note the addition of `playwright install --with-deps chromium`, which is necessary because the background scraper utilizes a headless browser to extract dynamic data from the IMD RVR portal.
 
 #### CORS
 

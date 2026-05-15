@@ -135,12 +135,17 @@ def create_multi_dashboard():
     print("Initializing Multi-Horizon Engine...")
     engine = MultiHorizonEngine()
     
-    # 1. Provide recent data from test set
-    df = pd.read_parquet(ROOT / "data" / "processed" / "igia_rvr_training_dataset_multi.parquet")
-    sample_input = df.tail(100) # Give it some buffer
-    
-    # preds matrix: shape (10 zones, 5 horizons)
-    preds = engine.predict_multi(sample_input)
+    # 1. Provide recent data from real-time pipeline
+    realtime_path = ROOT / "data" / "realtime" / "model_input.parquet"
+    if realtime_path.exists():
+        df = pd.read_parquet(realtime_path)
+        sample_input = df.tail(36) # Provide the latest 6 hours
+        preds = engine.predict_multi(sample_input)
+    else:
+        print(f"Warning: {realtime_path} not found. Generating empty dashboard.")
+        # Create an empty preds matrix (10 zones, 5 horizons)
+        preds = np.zeros((10, 5))
+
     
     # 2. Base Map
     m = folium.Map(location=[28.555, 77.095], zoom_start=14, tiles='CartoDB dark_matter')

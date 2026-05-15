@@ -175,4 +175,25 @@ To test whether tree-based predictions can improve the existing V3.1+V5 dynamic 
 - **Risk Profile**: High precision (83%), low recall (27%) at 600m threshold.
 - **Latest Ensemble Finding**: Adding XGBoost to Dynamic Hybrid did not improve the primary safety trade-off (recall/F1).
 
+---
+
+## Real-Time Production Deployment (May 15, 2026)
+
+To operationalize the Dynamic Hybrid model for live predictions, we developed a fully autonomous data ingestion and inference pipeline.
+
+### 1. Data Scraper (`scrape_realtime.py`)
+- **WiFEX Integration**: Pulls ambient visibility and meteorological data (temp, rh, wind) directly from the IITM WiFEX AWS endpoints. Handles missing sensor logic (e.g., falling back from 10m to 20m anemometers).
+- **Playwright DOM Scraping**: The new IMD RVR portal (`live-rvr`) serves dynamic data via STOMP WebSockets, which is inaccessible to standard HTTP requests. We integrated Playwright to spin up a headless Chromium browser, navigate the DOM, select "New Delhi Airport", and extract the live RVR values across all 10 zones.
+
+### 2. Feature Engineering Pipeline (`preprocess_realtime.py`)
+- Resamples the raw 12-hour buffer to a strict 10-minute frequency grid.
+- Derives complex physical metrics (e.g., Magnus formula for Dewpoint Depression) and rolling statistics (1h, 3h, 6h lags & std dev).
+- **Graceful Degradation**: If WiFEX or the RVR portal goes offline, the pipeline automatically fills NaNs with the training-set means (extracted from `scaler_X.pkl`), ensuring the model always receives exactly 104 valid features and never crashes the API.
+
+### 3. Application Integration (`app.py`)
+- Added `APScheduler` to the primary Flask application.
+- A background job autonomously executes the scrape-and-preprocess pipeline every 10 minutes, entirely decoupled from the API request thread.
+- The `MultiHorizonEngine` consumes the resulting `model_input.parquet` to rebuild the interactive Folium dashboard (`/map`) and update the live JSON API (`/predictions_multi`) consumed by the Flutter application. 
+- The system is now 100% automated and ready for live ATC testing.
+
 *End of Project Journal*

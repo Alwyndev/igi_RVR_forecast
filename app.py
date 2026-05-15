@@ -8,15 +8,61 @@ Endpoints:
   GET  /map                 – Folium HTML dashboard
 """
 
+import atexit
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import pandas as pd
 import os
+from pathlib import Path
+
+# Scheduler imports
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from dashboard_multi import MultiHorizonEngine, ZONE_COORDS, HORIZONS, create_multi_dashboard
 
+# Pipeline imports
+from src.data.scrape_realtime import assemble_buffer
+from src.data.preprocess_realtime import preprocess, BUFFER_PATH
+
 app = Flask(__name__)
 CORS(app)
+
+# ---------------------------------------------------------------------------
+# Background Scheduler Task
+# ---------------------------------------------------------------------------
+def run_realtime_pipeline():
+    """Background task to fetch live data, preprocess it, and update the dashboard."""
+    print("\n[Scheduler] Running real-time pipeline (scrape -> preprocess -> dashboard)...")
+    try:
+        # 1. Scrape data and update latest_buffer.parquet
+        assemble_buffer()
+        
+        # 2. Preprocess buffer and save to model_input.parquet
+        preprocess(BUFFER_PATH)
+        
+        # 3. Regenerate Folium map dashboard with latest data
+        create_multi_dashboard()
+        
+        print("[Scheduler] Pipeline cycle complete.\n")
+    except Exception as e:
+        print(f"[Scheduler] Pipeline encountered an error: {e}\n")
+
+# Initialize and start scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=run_realtime_pipeline, trigger="interval", minutes=10)
+scheduler.start()
+
+# Shut down the scheduler when exiting the app
+atexit.register(lambda: scheduler.shutdown())
+
+# Run the pipeline once on startup so data is immediately available
+# (You might want to comment this out if testing locally to speed up startup)
+print("Starting initial pipeline run...")
+run_realtime_pipeline()
+
+# ---------------------------------------------------------------------------
+# API Endpoints
+# ---------------------------------------------------------------------------
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -57,35 +103,26 @@ def forecast():
 
 @app.route('/predictions_multi', methods=['GET'])
 def predictions_multi():
-    """Return latest multi-horizon predictions as JSON for Flutter/native clients.
-
-    Response format:
-    {
-      "zones": [
-         {"id":"09_TDZ","lat":28.56,"lon":77.09,"predictions":{"10m":1200,"30m":1300,...}},
-         ...
-      ],
-      "horizons": ["10m","30m","1h","3h","6h"],
-      "generated_at": "2026-05-09T12:00:00"
-    }
-    """
+    """Return latest multi-horizon predictions as JSON for Flutter/native clients."""
     try:
-        # Initialize engine (may be heavy; keep it simple for now)
         engine = MultiHorizonEngine()
 
-        # Load recent processed dataset used by the engine
+        # Load live preprocessed dataset instead of static test set
         ROOT = os.path.dirname(__file__)
-        df_path = os.path.join(ROOT, 'data', 'processed', 'igia_rvr_training_dataset_multi.parquet')
+        df_path = os.path.join(ROOT, 'data', 'realtime', 'model_input.parquet')
+        
         if not os.path.exists(df_path):
-            return jsonify({"error": f"Data not found: {df_path}"}), 500
+            return jsonify({"error": f"Live data not found: {df_path}"}), 500
 
         df = pd.read_parquet(df_path)
-        # Let the engine pick the relevant tail internally
-        preds = engine.predict_multi(df)
+        
+        # Engine takes the tail 36 timesteps automatically in predict_multi
+        # but let's be explicit and pass the expected 36 timesteps (6 hours)
+        sample_input = df.tail(36)
+        
+        preds = engine.predict_multi(sample_input)
 
         zones = []
-        # Use the same canonical ordering as the engine expects
-        # ZONE_COORDS keys are used here (sorted to make deterministic)
         zone_keys = sorted(list(ZONE_COORDS.keys()))
         for z_idx, zone in enumerate(zone_keys):
             lat, lon = ZONE_COORDS[zone]
