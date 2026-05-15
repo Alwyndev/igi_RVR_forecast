@@ -1,0 +1,16 @@
+{
+  "pythonPath": ".venv/Scripts/python.exe",
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": [
+    "src",
+    "app.py",
+    "dashboard_multi.py"
+  ],
+  "exclude": [
+    "data/realtime/_debug_*.py",
+    "flutter_app"
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingModuleSource": "warning"
+}

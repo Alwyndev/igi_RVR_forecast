@@ -139,7 +139,7 @@ def predictions_multi():
                 
             zones.append({"id": zone, "lat": lat, "lon": lon, "predictions": zone_preds})
 
-        return jsonify({"zones": zones, "horizons": extended_horizons, "generated_at": pd.Timestamp.now().isoformat()})
+        return jsonify({"zones": zones, "horizons": extended_horizons, "generated_at": pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%dT%H:%M:%SZ')})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

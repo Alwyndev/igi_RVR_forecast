@@ -6,7 +6,7 @@ This document covers the full deployment pipeline: from containerized backend to
 
 ## 1. System Architecture
 
-```
+```text
 ┌─────────────────────┐     HTTPS/JSON      ┌──────────────────────────────┐
 │   Flutter Mobile     │ ◄──────────────────► │   Google Cloud Run           │
 │   (Android APK)      │    /predictions_multi│                              │
@@ -25,7 +25,7 @@ This document covers the full deployment pipeline: from containerized backend to
 
 ### Production URL
 
-```
+```text
 https://igi-rvr-api-969804968558.asia-south1.run.app
 ```
 
@@ -52,6 +52,7 @@ curl https://igi-rvr-api-969804968558.asia-south1.run.app/health
 Submit a 36-timestep feature window (6 hours at 10-minute resolution) and receive multi-zone, multi-horizon predictions.
 
 **Request:**
+
 ```bash
 curl -X POST \
   https://igi-rvr-api-969804968558.asia-south1.run.app/forecast \
@@ -60,6 +61,7 @@ curl -X POST \
 ```
 
 **Response (200):**
+
 ```json
 {
   "forecast_horizons": ["10m", "30m", "1h", "3h", "6h"],
@@ -133,6 +135,7 @@ gcloud run deploy igi-rvr-api \
 ```
 
 Cloud Build will:
+
 1. Read `.gcloudignore` to determine which files to upload
 2. Build the Docker image using the `Dockerfile`
 3. Deploy to Cloud Run with the specified configuration
@@ -148,7 +151,7 @@ Cloud Build will:
 The `.gitignore` excludes model weights (`models/*.pt`) which is correct for git, but Cloud Run needs them. The custom `.gcloudignore` overrides this behavior:
 
 | What | Included in deploy? | Why |
-|:---|:---:|:---|
+| :--- | :---: | :--- |
 | `models/*.pt` (V3, V5) | ✅ Yes | Required for inference |
 | `data/processed/scalers_v3/` | ✅ Yes | Required for feature scaling |
 | `data/processed/*.parquet` | ✅ Yes | Required for `/predictions_multi` |
@@ -244,9 +247,11 @@ curl http://localhost:5000/health
 curl http://localhost:5000/predictions_multi
 ```
 
+
 ### Connecting Flutter to Local Backend
 
 In `lib/main.dart`, temporarily change `backendUrl` to:
+
 - **Android Emulator**: `http://10.0.2.2:5000/predictions_multi`
 - **Physical Device (same Wi-Fi)**: `http://<your-machine-ip>:5000/predictions_multi`
 
@@ -263,7 +268,7 @@ curl -s https://igi-rvr-api-969804968558.asia-south1.run.app/health | python -m 
 ### Common Issues
 
 | Symptom | Cause | Fix |
-|:---|:---|:---|
+| :--- | :--- | :--- |
 | 503 on startup | Container crash loop — model files missing | Verify `.gcloudignore` includes `.pt` files, redeploy |
 | Slow cold start (~15s) | Loading PyTorch + model weights | Expected behavior; Cloud Run keeps instances warm under traffic |
 | Tile rendering warnings in Flutter | Missing `userAgentPackageName` | Already fixed: set to `com.igi.antigravity` |
