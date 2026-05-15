@@ -194,15 +194,26 @@ Cloud Run sets the `$PORT` environment variable automatically. Gunicorn binds to
 - Android SDK with build tools
 - JDK 17+
 
-### Build Steps
+### Build Steps (Multi-Platform)
 
 ```bash
 cd flutter_app
 flutter pub get
+
+# Android APK
 flutter build apk --release
+
+# Windows Executable
+flutter build windows --release
+
+# Web App
+flutter build web --release
 ```
 
-Output: `flutter_app/build/app/outputs/flutter-apk/app-release.apk`
+**Outputs:**
+- **Android**: `flutter_app/build/app/outputs/flutter-apk/app-release.apk`
+- **Windows**: `flutter_app/build/windows/x64/runner/Release/`
+- **Web**: `flutter_app/build/web/`
 
 ### Changing the Backend URL
 

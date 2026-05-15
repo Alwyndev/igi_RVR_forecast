@@ -27,7 +27,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.light;
 
   void toggleTheme() {
     setState(() {
@@ -65,6 +65,8 @@ class _MapPageState extends State<MapPage> {
   int horizonIndex = 0;
   List<String> horizons = [];
   String generatedAt = '';
+  final MapController _mapController = MapController();
+  bool _showRecenter = false;
 
   @override
   void initState() {
@@ -107,16 +109,30 @@ class _MapPageState extends State<MapPage> {
         children: [
           // Background Map Layer covers the entire screen
           FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
               center: LatLng(28.555, 77.095),
               zoom: 14.0,
+              minZoom: 12.5,
+              maxZoom: 18.0,
+              onPositionChanged: (pos, hasGesture) {
+                if (pos.center != null) {
+                  final dist = const Distance().as(
+                      LengthUnit.Kilometer, pos.center!, LatLng(28.555, 77.095));
+                  if ((dist > 3.0) != _showRecenter) {
+                    setState(() {
+                      _showRecenter = dist > 3.0;
+                    });
+                  }
+                }
+              },
             ),
             children: [
               TileLayer(
                 urlTemplate: widget.currentTheme == ThemeMode.dark
                     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-                    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
+                    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
                 userAgentPackageName: 'com.igi.antigravity',
                 errorTileCallback: (tile, error, stackTrace) {
                   // Suppresses unhandled error logs for occasionally dropped tile connections
@@ -211,8 +227,8 @@ class _MapPageState extends State<MapPage> {
             child: SafeArea(
               top: false,
               child: Container(
-                // 50% opacity black background
-                color: Colors.black.withOpacity(0.5),
+                // Transparent background
+                color: Colors.transparent,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 child: Column(
@@ -225,20 +241,26 @@ class _MapPageState extends State<MapPage> {
                           horizons.isNotEmpty
                               ? 'Forecast: ${horizons[horizonIndex]}'
                               : 'Loading...',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: widget.currentTheme == ThemeMode.dark
+                                ? Colors.white
+                                : Colors.black87,
                             letterSpacing: 1.1,
                           ),
                         ),
-                        ElevatedButton.icon(
+                        IconButton(
                           onPressed: fetchData,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Refresh'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white24,
-                            foregroundColor: Colors.white,
+                          tooltip: 'Refresh Data',
+                          color: widget.currentTheme == ThemeMode.dark
+                              ? Colors.white
+                              : Colors.black87,
+                          style: IconButton.styleFrom(
+                            backgroundColor: widget.currentTheme == ThemeMode.dark
+                                ? Colors.white10
+                                : Colors.black12,
                           ),
                         ),
                       ],
@@ -251,7 +273,7 @@ class _MapPageState extends State<MapPage> {
                       divisions:
                           horizons.isNotEmpty ? (horizons.length - 1) : 1,
                       activeColor: Colors.blueAccent,
-                      inactiveColor: Colors.white30,
+                      inactiveColor: Colors.black45,
                       onChanged: (v) {
                         setState(() => horizonIndex = v.round());
                       },
@@ -339,6 +361,21 @@ class _MapPageState extends State<MapPage> {
               ],
             ),
           ),
+
+          // Recenter Button - appears when user pans far away
+          if (_showRecenter)
+            Positioned(
+              right: 16,
+              bottom: 120, // Positioned above the slider panel
+              child: FloatingActionButton(
+                mini: true,
+                backgroundColor: widget.currentTheme == ThemeMode.dark ? Colors.blueAccent : Colors.blue,
+                child: const Icon(Icons.center_focus_strong, color: Colors.white),
+                onPressed: () {
+                  _mapController.move(LatLng(28.555, 77.095), 14.0);
+                },
+              ),
+            ),
         ],
       ),
     );

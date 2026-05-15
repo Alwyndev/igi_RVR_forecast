@@ -220,4 +220,19 @@ To operationalize the Dynamic Hybrid model for live predictions, we developed a 
 - The `MultiHorizonEngine` consumes the resulting `model_input.parquet` to rebuild the interactive Folium dashboard (`/map`) and update the live JSON API (`/predictions_multi`) consumed by the Flutter application.
 - The system is now 100% automated and ready for live ATC testing.
 
+### 4. Flutter Client Evolution & UI/UX Polish
+
+The final phase focused on transforming the mobile client into a robust, multi-platform tool with premium aesthetics and improved usability.
+
+- **Multi-Platform Support**: Successfully expanded the build pipeline to target **Windows Desktop** and **Web**, in addition to the original Android APK. This allows ATC officers to view predictions on workstation monitors and tablets alike.
+- **Map Engine Refinement**: 
+    - Switched to **OpenStreetMap** (Standard) for light mode to provide rich topographical detail (runways, taxiways, surrounding roads) as requested by users.
+    - Implemented **Zoom Constraints** (min 12.5, max 18.0) to prevent the map from zooming out beyond the operational area of the airport (~15km square).
+    - Added a **Dynamic Recenter Button**: A target icon automatically appears when the user pans more than 3km away from the airport, allowing for instant return to the sensor markers.
+- **Aesthetic Overhaul**:
+    - **Transparency**: The bottom control panel was made fully transparent to maximize map real estate and provide a modern "floating" look.
+    - **Dynamic Color Logic**: Implemented theme-aware styling where text and icons automatically switch between **Black** (Light Mode) and **White** (Dark Mode) for optimal contrast.
+    - **Minimalist Refresh**: The refresh button was simplified to a lone icon, reducing visual clutter while maintaining core functionality.
+- **Default Experience**: Standardized the app to default to **Light Mode** to match the daytime operational environment of most users.
+
 *End of Project Journal*

@@ -5,7 +5,9 @@
 ![Accuracy](https://img.shields.io/badge/Acc%40200m-85.75%25-blue?style=for-the-badge)
 ![Live](https://img.shields.io/badge/Cloud_Run-Live-4285F4?style=for-the-badge&logo=googlecloud)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.11-EE4C2C?style=for-the-badge&logo=pytorch)
-![Flutter](https://img.shields.io/badge/Flutter-Mobile_App-02569B?style=for-the-badge&logo=flutter)
+![Flutter](https://img.shields.io/badge/Flutter-Multi--Platform-02569B?style=for-the-badge&logo=flutter)
+![Windows](https://img.shields.io/badge/Windows-Desktop-0078D4?style=for-the-badge&logo=windows)
+![Web](https://img.shields.io/badge/Web-Browser-4285F4?style=for-the-badge&logo=google)
 
 ---
 
@@ -13,7 +15,7 @@
 
 A production-deployed RVR (Runway Visual Range) forecasting system built for IGIA's winter fog season. The system predicts visibility across **10 runway zones** at **5 time horizons** (+10m, +30m, +1h, +3h, +6h) using a **V3.1 + V5 Dynamic Hybrid** ensemble of Residual Attention LSTMs.
 
-The backend runs on **Google Cloud Run** and serves a **Flutter mobile app** that renders predictions on an interactive dark-mode airfield map.
+The backend runs on **Google Cloud Run** and serves a **Multi-Platform Flutter Client** (Android, Windows, Web) featuring an interactive airfield map, automated recenter functionality, and theme-aware premium aesthetics.
 
 ### Key Achievements
 
@@ -33,14 +35,14 @@ The backend runs on **Google Cloud Run** and serves a **Flutter mobile app** tha
 ```
 ┌──────────────┐         ┌─────────────────────────┐         ┌────────────────┐
 │  Sensor Data │         │   Google Cloud Run       │         │  Flutter App   │
-│  (RVR/METAR/ │────────►│                          │◄────────│  (Android)     │
+│  (RVR/METAR/ │────────►│                          │◄────────│ (Android/Win/W)│
 │   AQI feeds) │         │   Flask API (app.py)     │  HTTPS  │                │
-└──────────────┘         │   ├── /health            │         │  • Dark map    │
+└──────────────┘         │   ├── /health            │  JSON   │  • Detailed map│
                          │   ├── /forecast           │         │  • Horizon     │
                          │   ├── /predictions_multi  │         │    slider      │
                          │   └── /map                │         │  • ICAO pills  │
-                         │                          │         └────────────────┘
-                         │   V3.1 + V5 Dynamic      │
+                         │                          │         │  • Recenter    │
+                         │   V3.1 + V5 Dynamic      │         └────────────────┘
                          │   Hybrid Inference        │
                          └─────────────────────────┘
 ```
@@ -56,9 +58,10 @@ The backend runs on **Google Cloud Run** and serves a **Flutter mobile app** tha
 | **Baseline** | XGBoost multi-target (50 regressors, benchmarking only) |
 | **API** | Flask + Gunicorn, Flask-CORS |
 | **Cloud** | Google Cloud Run (asia-south1), Python 3.12-slim |
-| **Mobile** | Flutter (Dart), flutter_map, CartoDB Dark Matter tiles |
+| **Frontend** | Flutter (Dart) — Android, Windows, Web |
+| **Maps** | OpenStreetMap (Light), CartoDB (Dark), flutter_map |
 | **Data** | 104-feature pipeline (RVR, METAR, AQI, Haversine spatial) |
-| **Visualization** | Folium interactive map with custom time-slider |
+| **UX Features** | Zoom limiting (12.5-18), Auto-Recenter, Transparent UI |
 
 ---
 
@@ -138,13 +141,15 @@ gcloud run deploy igi-rvr-api \
 
 See **[DEPLOYMENT.md](DEPLOYMENT.md)** for full deployment guide, API reference, and troubleshooting.
 
-### 3. Flutter Mobile App
+### 3. Flutter App (Multi-Platform)
 
 ```bash
 cd flutter_app
 flutter pub get
 flutter run                    # Debug
-flutter build apk --release    # Production APK
+flutter build apk --release    # Android APK
+flutter build windows --release # Windows Executable
+flutter build web --release     # Web Assets
 ```
 
 See **[flutter_app/README.md](flutter_app/README.md)** for configuration details.
