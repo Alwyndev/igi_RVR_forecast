@@ -19,21 +19,42 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.dark;
+
+  void toggleTheme() {
+    setState(() {
+      _themeMode =
+          _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'IGI RVR Map',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: const MapPage(),
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: _themeMode,
+      home: MapPage(onToggleTheme: toggleTheme, currentTheme: _themeMode),
     );
   }
 }
 
 class MapPage extends StatefulWidget {
-  const MapPage({super.key});
+  final VoidCallback onToggleTheme;
+  final ThemeMode currentTheme;
+
+  const MapPage({super.key, required this.onToggleTheme, required this.currentTheme});
+
   @override
   State<MapPage> createState() => _MapPageState();
 }
@@ -42,6 +63,7 @@ class _MapPageState extends State<MapPage> {
   Map<String, dynamic>? data;
   int horizonIndex = 0;
   List<String> horizons = [];
+  String generatedAt = '';
 
   @override
   void initState() {
@@ -57,6 +79,7 @@ class _MapPageState extends State<MapPage> {
         setState(() {
           data = payload;
           horizons = List<String>.from(payload['horizons'] ?? []);
+          generatedAt = payload['generated_at'] ?? '';
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -89,8 +112,9 @@ class _MapPageState extends State<MapPage> {
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                urlTemplate: widget.currentTheme == ThemeMode.dark
+                    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+                    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.igi.antigravity',
                 errorTileCallback: (tile, error, stackTrace) {
@@ -238,20 +262,56 @@ class _MapPageState extends State<MapPage> {
           ),
 
           // Custom Floating App Title at Top Left since AppBar is removed
+          // Custom Floating App Title at Top Left since AppBar is removed
           Positioned(
             left: 16,
             top: 48, // offset for device status bar
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white24)),
-              child: const Text('IGI RVR Forecaster',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                      color: widget.currentTheme == ThemeMode.dark ? Colors.black87 : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: widget.currentTheme == ThemeMode.dark ? Colors.white24 : Colors.black12)),
+                  child: Row(
+                    children: [
+                      Text('IGI RVR Forecaster',
+                          style: TextStyle(
+                              color: widget.currentTheme == ThemeMode.dark ? Colors.white : Colors.black87,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 16),
+                      IconButton(
+                        icon: Icon(
+                          widget.currentTheme == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
+                          color: widget.currentTheme == ThemeMode.dark ? Colors.white : Colors.black87,
+                        ),
+                        onPressed: widget.onToggleTheme,
+                        tooltip: 'Toggle Theme',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (generatedAt.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: widget.currentTheme == ThemeMode.dark ? Colors.black54 : Colors.white70,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Last Updated: ${DateTime.parse(generatedAt).toLocal().toString().split('.')[0]}',
+                      style: TextStyle(
+                        color: widget.currentTheme == ThemeMode.dark ? Colors.white70 : Colors.black87,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

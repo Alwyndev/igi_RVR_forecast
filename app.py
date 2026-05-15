@@ -122,14 +122,24 @@ def predictions_multi():
         
         preds = engine.predict_multi(sample_input)
 
+        # We will add a "Current" horizon using the actual latest RVR data
+        extended_horizons = ["Current"] + HORIZONS
+
         zones = []
         zone_keys = sorted(list(ZONE_COORDS.keys()))
         for z_idx, zone in enumerate(zone_keys):
             lat, lon = ZONE_COORDS[zone]
-            zone_preds = {h: float(preds[z_idx, h_idx]) for h_idx, h in enumerate(HORIZONS)}
+            
+            # Fetch the actual RVR from the very last row of the dataset
+            current_rvr = float(sample_input.iloc[-1][f"{zone}_rvr_actual_mean"])
+            
+            zone_preds = {"Current": current_rvr}
+            for h_idx, h in enumerate(HORIZONS):
+                zone_preds[h] = float(preds[z_idx, h_idx])
+                
             zones.append({"id": zone, "lat": lat, "lon": lon, "predictions": zone_preds})
 
-        return jsonify({"zones": zones, "horizons": HORIZONS, "generated_at": pd.Timestamp.now().isoformat()})
+        return jsonify({"zones": zones, "horizons": extended_horizons, "generated_at": pd.Timestamp.now().isoformat()})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
