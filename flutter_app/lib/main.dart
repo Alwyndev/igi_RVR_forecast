@@ -39,7 +39,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'IGI RVR Map',
+      title: 'IGI RVR',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
@@ -53,7 +53,8 @@ class MapPage extends StatefulWidget {
   final VoidCallback onToggleTheme;
   final ThemeMode currentTheme;
 
-  const MapPage({super.key, required this.onToggleTheme, required this.currentTheme});
+  const MapPage(
+      {super.key, required this.onToggleTheme, required this.currentTheme});
 
   @override
   State<MapPage> createState() => _MapPageState();
@@ -270,23 +271,35 @@ class _MapPageState extends State<MapPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                      color: widget.currentTheme == ThemeMode.dark ? Colors.black87 : Colors.white,
+                      color: widget.currentTheme == ThemeMode.dark
+                          ? Colors.black87
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: widget.currentTheme == ThemeMode.dark ? Colors.white24 : Colors.black12)),
+                      border: Border.all(
+                          color: widget.currentTheme == ThemeMode.dark
+                              ? Colors.white24
+                              : Colors.black12)),
                   child: Row(
                     children: [
-                      Text('IGI RVR Forecaster',
+                      Text('IGI RVR',
                           style: TextStyle(
-                              color: widget.currentTheme == ThemeMode.dark ? Colors.white : Colors.black87,
+                              color: widget.currentTheme == ThemeMode.dark
+                                  ? Colors.white
+                                  : Colors.black87,
                               fontSize: 16,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(width: 16),
                       IconButton(
                         icon: Icon(
-                          widget.currentTheme == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
-                          color: widget.currentTheme == ThemeMode.dark ? Colors.white : Colors.black87,
+                          widget.currentTheme == ThemeMode.dark
+                              ? Icons.light_mode
+                              : Icons.dark_mode,
+                          color: widget.currentTheme == ThemeMode.dark
+                              ? Colors.white
+                              : Colors.black87,
                         ),
                         onPressed: widget.onToggleTheme,
                         tooltip: 'Toggle Theme',
@@ -297,15 +310,20 @@ class _MapPageState extends State<MapPage> {
                 const SizedBox(height: 8),
                 if (generatedAt.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: widget.currentTheme == ThemeMode.dark ? Colors.black54 : Colors.white70,
+                      color: widget.currentTheme == ThemeMode.dark
+                          ? Colors.black54
+                          : Colors.white70,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'Last Updated: ${DateTime.parse(generatedAt).toLocal().toString().split('.')[0]}',
+                      'Last Updated: ${DateTime.parse(generatedAt).toUtc().add(const Duration(hours: 5, minutes: 30)).toString().split('.')[0]} IST',
                       style: TextStyle(
-                        color: widget.currentTheme == ThemeMode.dark ? Colors.white70 : Colors.black87,
+                        color: widget.currentTheme == ThemeMode.dark
+                            ? Colors.white70
+                            : Colors.black87,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
