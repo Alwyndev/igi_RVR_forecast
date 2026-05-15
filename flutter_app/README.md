@@ -44,6 +44,7 @@ const String backendUrl =
 ```
 
 **For local development**, replace with:
+
 - Android emulator: `http://10.0.2.2:5000/predictions_multi`
 - Physical device (same Wi-Fi): `http://<your-machine-ip>:5000/predictions_multi`
 

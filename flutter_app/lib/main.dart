@@ -319,7 +319,14 @@ class _MapPageState extends State<MapPage> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      'Last Updated: ${DateTime.parse(generatedAt).toUtc().add(const Duration(hours: 5, minutes: 30)).toString().split('.')[0]} IST',
+                      'Last Updated: ${(() {
+                        String timeStr = generatedAt;
+                        if (!timeStr.endsWith('Z') && !timeStr.contains('+')) {
+                          timeStr += 'Z';
+                        }
+                        DateTime dt = DateTime.parse(timeStr).toUtc();
+                        return dt.add(const Duration(hours: 5, minutes: 30)).toString().split('.')[0];
+                      })()} IST',
                       style: TextStyle(
                         color: widget.currentTheme == ThemeMode.dark
                             ? Colors.white70
