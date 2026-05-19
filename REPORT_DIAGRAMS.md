@@ -1,11 +1,14 @@
 # Recommended Images and Diagrams for Internship Report
 
-Here is a curated list of diagrams and images that perfectly illustrate the technical depth of your project. You can copy this code into an online renderer like [Mermaid Live](https://mermaid.live/) or screenshot them directly if your Markdown viewer supports Mermaid!
+Here is a curated list of diagrams and images that perfectly illustrate the technical depth of your project. 
+
+> **Tip for Visibility:** If your markdown viewer makes these look small, copy the code blocks below and paste them into [Mermaid Live](https://mermaid.live/). From there, you can easily download them as high-resolution PNGs!
 
 ## 1. High-Level System Architecture
 *This diagram illustrates the end-to-end flow of data from the sensor networks to the Google Cloud backend, and finally to the Flutter clients used by ATC.*
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'arial', 'primaryColor': '#e8f4f8', 'edgeLabelBackground':'#ffffff'}}}%%
 graph TD
     subgraph Data Sources
         S1[IMD RVR Portal]
@@ -36,9 +39,9 @@ graph TD
     APP --> UI1
     APP --> UI2
 
-    classDef gcp fill:#e8f0fe,stroke:#4285f4,stroke-width:2px;
-    classDef client fill:#e1f5fe,stroke:#02569b,stroke-width:2px;
-    classDef data fill:#f1f8e9,stroke:#558b2f,stroke-width:2px;
+    classDef gcp fill:#e8f0fe,stroke:#4285f4,stroke-width:3px,color:#000;
+    classDef client fill:#e1f5fe,stroke:#02569b,stroke-width:3px,color:#000;
+    classDef data fill:#f1f8e9,stroke:#558b2f,stroke-width:3px,color:#000;
     
     class API,SCR,PRE,ENG gcp;
     class APP,UI1,UI2 client;
@@ -51,6 +54,7 @@ graph TD
 *This diagram highlights your major machine learning contribution: combining the high-accuracy V3.1 model with the safety-first V5 model.*
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'arial'}}}%%
 flowchart TD
     IN(Normalized 36-timestep Window)
     
@@ -78,9 +82,9 @@ flowchart TD
     CLEAR --> OUT
     FOG --> OUT
     
-    style V3 fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style V5 fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style OUT fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    style V3 fill:#fff3e0,stroke:#e65100,stroke-width:3px,color:#000
+    style V5 fill:#ffebee,stroke:#c62828,stroke-width:3px,color:#000
+    style OUT fill:#e8f5e9,stroke:#2e7d32,stroke-width:4px,color:#000
 ```
 
 ---
@@ -89,6 +93,7 @@ flowchart TD
 *This flowchart breaks down the complex data preprocessing steps required to feed the models, perfect for the "Implementation" section of your report.*
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'arial'}}}%%
 flowchart LR
     A[(Raw 12-Hour Buffer)] --> B[Resampling]
     B -->|Strict 10-min grid| C{Feature Engineering}
@@ -102,8 +107,10 @@ flowchart LR
     F -->|Graceful NaN Imputation| G[StandardScaler]
     G --> H([Model Inference])
 
-    style C fill:#ede7f6,stroke:#4527a0
-    style F fill:#e3f2fd,stroke:#1565c0
+    style A fill:#fafafa,stroke:#333,stroke-width:2px,color:#000
+    style C fill:#ede7f6,stroke:#4527a0,stroke-width:3px,color:#000
+    style F fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
+    style H fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
 ```
 
 ---
@@ -112,6 +119,7 @@ flowchart LR
 *A visual representation of how your models perform compared to the baseline. (You can also easily recreate this as a bar chart in Excel/Word).*
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '18px', 'fontFamily': 'arial'}}}%%
 xychart-beta
     title "Fog Recall vs Mean Absolute Error"
     x-axis ["XGBoost Baseline", "V3.1 (Champion)", "V5 (High Recall)", "Dynamic Hybrid"]
@@ -131,3 +139,6 @@ Since your project includes a Flutter frontend, I highly recommend capturing the
 3. **The Horizon Slider**: An action shot showing the bottom control panel (transparent) with the slider shifted to "+3h".
 4. **The Auto-Recenter Feature**: A screenshot showing the map panned away with the auto-recenter target icon visible.
 5. **The Application Logo**: The `flutter_app/assets/RVR_logo.png` file, which you can use in the introduction or cover page of your report.
+
+## 6. Training & Validation Curves (To add manually)
+**Yes!** Including the training and testing curves is highly recommended for Chapter 2.4 (Testing) or Chapter 2.6. They visually prove to the evaluators that your LSTM models successfully converged and did not overfit on the 2024 validation and 2025 test datasets. You should export those plots from your Jupyter notebooks or PyTorch training scripts and add them to the report.
